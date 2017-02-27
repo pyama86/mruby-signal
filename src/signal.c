@@ -527,6 +527,36 @@ mrb_trap_exit(mrb_state *mrb)
   }
 }
 
+static mrb_value 
+set_mask(int(*func)(int how, const sigset_t *set, sigset_t *oldset), mrb_state *mrb, mrb_value self)
+{
+  int sig;
+  mrb_value sig_name;
+  sigset_t new_set;
+
+  mrb_get_args(mrb, "o", &sig_name);
+  sig = trap_signm(mrb, sig_name);
+  sigemptyset(&new_set);
+  sigaddset(&new_set, sig);
+
+  if(func(SIG_BLOCK, &new_set, NULL) == -1) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "set mask error");
+  }
+  return mrb_nil_value();
+}
+
+static mrb_value 
+signal_mask(mrb_state *mrb, mrb_value self)
+{
+  return set_mask(sigprocmask, mrb, self);
+}
+
+static mrb_value 
+thread_mask(mrb_state *mrb, mrb_value self)
+{
+  return set_mask(pthread_sigmask, mrb, self);
+}
+
 static int
 install_sighandler(mrb_state *mrb, int signum, sighandler_t handler)
 {
@@ -552,6 +582,8 @@ mrb_mruby_signal_gem_init(mrb_state* mrb) {
   mrb_define_class_method(mrb, signal, "trap", signal_trap, MRB_ARGS_ANY());
   mrb_define_class_method(mrb, signal, "list", signal_list, MRB_ARGS_NONE());
   mrb_define_class_method(mrb, signal, "signame", signal_signame, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, signal, "mask", signal_mask, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, signal, "thread_mask", thread_mask, MRB_ARGS_REQ(1));
 
   mrb_define_method(mrb, mrb->kernel_module, "trap", signal_trap, MRB_ARGS_ANY());
 

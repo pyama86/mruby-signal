@@ -37,3 +37,7 @@ assert "Signal#signame" do
   assert_equal "QUIT", Signal.signame(3)
   assert_equal nil, Signal.signame(-1)
 end
+
+assert "Signal#mask" do
+  assert_nil Signal.mask(:SIGHUP)
+end
